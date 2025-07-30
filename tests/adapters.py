@@ -9,6 +9,8 @@ import numpy.typing as npt
 import torch
 from torch import Tensor
 
+from cs336_basics import modules
+
 
 def run_linear(
     d_in: int,
@@ -28,8 +30,9 @@ def run_linear(
     Returns:
         Float[Tensor, "... d_out"]: The transformed output of your linear module.
     """
-
-    raise NotImplementedError
+    model = modules.MyLinear(d_in, d_out)
+    model.load_state_dict(state_dict={'W': weights.T})
+    return model(in_features)
 
 
 def run_embedding(
@@ -51,7 +54,9 @@ def run_embedding(
         Float[Tensor, "... d_model"]: Batch of embeddings returned by your Embedding layer.
     """
 
-    raise NotImplementedError
+    model = modules.MyEmbedding(vocab_size, d_model)
+    model.load_state_dict(state_dict={'W': weights})
+    return model(token_ids)
 
 
 def run_swiglu(
@@ -378,7 +383,10 @@ def run_rmsnorm(
         Float[Tensor,"... d_model"]: Tensor of with the same shape as `in_features` with the output of running
         RMSNorm of the `in_features`.
     """
-    raise NotImplementedError
+
+    model = modules.MyRMSNorm(d_model, eps)
+    model.load_state_dict(state_dict={'W': weights})
+    return model.forward(in_features)
 
 
 def run_silu(in_features: Float[Tensor, " ..."]) -> Float[Tensor, " ..."]:
@@ -392,7 +400,9 @@ def run_silu(in_features: Float[Tensor, " ..."]) -> Float[Tensor, " ..."]:
         Float[Tensor,"..."]: of with the same shape as `in_features` with the output of applying
         SiLU to each element.
     """
-    raise NotImplementedError
+
+    model = modules.MySilu()
+    return model(in_features)
 
 
 def run_get_batch(
