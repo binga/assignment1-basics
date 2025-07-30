@@ -53,7 +53,6 @@ class MyRMSNorm(torch.nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # PyTorch way
         output = x.to(torch.float32)
-        # print(output.v)
         denom = torch.sqrt(output.pow(2).mean(dim=-1, keepdim=True) + self.eps)
         output = output / denom
         output = output * self.W
@@ -70,15 +69,5 @@ class MySilu(torch.nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # PyTorch way
         sigm = torch.sigmoid(x)
-        # print(sigm.v)
         output = x * sigm
-
         return output
-
-# torch.manual_seed(42)
-# model = MyLinear(5, 2)
-
-# batch = torch.randn(3, 5)
-
-# output = model(batch)
-# output.v
