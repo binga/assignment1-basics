@@ -71,3 +71,29 @@ class MySilu(torch.nn.Module):
         sigm = torch.sigmoid(x)
         output = x * sigm
         return output
+    
+def MySoftmax(x: torch.Tensor, dim: int):
+    eps = 1e-8
+
+    # numerical stability at high values of logits
+    # dim-wise max and not overall max
+    max = torch.max(x, dim=dim, keepdim=True)[0]
+    x = x - max
+
+    # usual business here
+    num = torch.exp(x)
+    denom = torch.exp(x).sum(dim=dim, keepdim=True)
+    output = num / (denom + eps)
+    return output
+
+def Myscaled_dot_product_attention(Q, K, V, mask=None):
+    ## einsum approach
+    attn_scores = einsum(Q, K, "... queries d_k, ... keys d_k -> ... queries keys")
+    attn_scores = attn_scores / torch.sqrt(torch.tensor(Q.shape[-1]))
+
+    if mask is not None:
+        attn_weights = attn_scores.masked_fill(mask == 0, -torch.inf)
+
+    attn_weights = MySoftmax(attn_weights, dim=-1)
+    context_vec = einsum(attn_weights, V, "... queries sl, ... sl d_v -> ... queries d_v")
+    return context_vec
