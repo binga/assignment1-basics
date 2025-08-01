@@ -97,3 +97,29 @@ def Myscaled_dot_product_attention(Q, K, V, mask=None):
     attn_weights = MySoftmax(attn_weights, dim=-1)
     context_vec = einsum(attn_weights, V, "... queries sl, ... sl d_v -> ... queries d_v")
     return context_vec
+
+class MySDPA(torch.nn.Module):
+    def __init__(self, seq_len, emb_size):
+        super().__init__()
+        self.W_query = torch.nn.Parameter(torch.randn(seq_len, emb_size))
+        self.W_key   = torch.nn.Parameter(torch.randn(seq_len, emb_size))
+        self.W_value = torch.nn.Parameter(torch.randn(seq_len, emb_size))
+
+    def forward(self, x):
+        return Myscaled_dot_product_attention(self.W_query, self.W_key, self.W_value, None)
+
+class MyCausalMHA(torch.nn.Module):
+    def __init__(self, d_model: int, num_heads: int, seq_len: int, emb_size: int):
+        super().__init__()
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.seq_len = seq_len
+        self.emb_size = emb_size
+        self.d_k = self.d_model / self.num_heads
+
+        self.heads = torch.nn.ModuleList([MySDPA(self.seq_len, self.emb_size)
+                                         for _ in range(self.num_heads)])
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        context_vecs = torch.cat([head(x) for head in self.heads], dim=-1)
+        return context_vecs
