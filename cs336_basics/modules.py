@@ -264,3 +264,27 @@ class MyCausalMHA2(torch.nn.Module):
         output = einsum(context_vec, self.o_proj, "... sl d_model, d_v d_model -> ... sl d_v")
         # output = context_vec @ self.o_proj.T
         return output
+    
+class MyTransformerBlock(torch.nn.Module):
+    def __init__(self, d_model: int, num_heads: int, d_ff: int, max_seq_len=10000, theta=10000, device=None, dtype=None):
+        super().__init__()
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.d_ff = d_ff
+        self.device = device
+        self.attn = MyCausalMHA2(d_model=d_model, num_heads=num_heads, max_seq_len=max_seq_len, theta=theta, use_rope=True, device=device)
+        self.ffn = MySwiGlu(d_model=d_model, d_ff=d_ff, device=device, dtype=dtype)
+        self.attnorm = MyRMSNorm(d_model=d_model, device=device, dtype=dtype)
+        self.ffnnorm = MyRMSNorm(d_model=d_model, device=device, dtype=dtype)
+
+    def forward(self, x: torch.Tensor):
+        bs, sl, d_model = x.shape
+
+        x_norm = self.attnorm(x)
+        x_attn = self.attn(x_norm)
+        x_add = x + x_attn
+
+        x_ffn_norm = self.ffnnorm(x_add)
+        x_ffn = self.ffn(x_ffn_norm)
+        x_final = x_add + x_ffn
+        return x_final
