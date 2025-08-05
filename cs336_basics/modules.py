@@ -1,6 +1,6 @@
 import torch
 from math import sqrt
-from einops import einsum
+from einops import einsum, rearrange
 
 class MyLinear(torch.nn.Module):
     def __init__(self, in_features, out_features, device=None, dtype=None):
@@ -98,12 +98,6 @@ def Myscaled_dot_product_attention(Q, K, V, mask=None):
     context_vec = einsum(attn_weights, V, "... queries sl, ... sl d_v -> ... queries d_v")
     return context_vec
 
-import torch
-import torch.nn as nn
-from torch.nn import Linear
-import numpy as np
-from einops import rearrange
-
 class MyRoPE(torch.nn.Module):
     def __init__(self, theta: float, d_k: int, max_seq_len: int, device=None):
         super().__init__()
@@ -154,10 +148,10 @@ class MyCausalMHA(torch.nn.Module):
         # self.v_proj = torch.nn.Parameter(torch.randn(d_model, d_model))
         # self.o_proj = torch.nn.Parameter(torch.randn(d_model, d_model))
 
-        self.q_proj = Linear(d_model, d_model)
-        self.k_proj = Linear(d_model, d_model)
-        self.v_proj = Linear(d_model, d_model)
-        self.o_proj = Linear(d_model, d_model)
+        self.q_proj = torch.nn.Linear(d_model, d_model)
+        self.k_proj = torch.nn.Linear(d_model, d_model)
+        self.v_proj = torch.nn.Linear(d_model, d_model)
+        self.o_proj = torch.nn.Linear(d_model, d_model)
 
 
     def forward(self, x):
@@ -192,8 +186,6 @@ class MyCausalMHA(torch.nn.Module):
         output = self.o_proj(context_vec)
         return output
 
-from einops import rearrange
-from torch.nn import Linear
 
 class MyCausalMHA2(torch.nn.Module):
     def __init__(self, d_model, num_heads, max_seq_len=None, theta=10000, device=None, use_rope=False, token_positions=None):
