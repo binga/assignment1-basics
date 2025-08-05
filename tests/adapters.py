@@ -109,6 +109,7 @@ def run_scaled_dot_product_attention(
     Returns:
         Float[Tensor, " ... queries d_v"]: Output of SDPA
     """
+    print(Q.shape, K.shape, V.shape, mask.shape)
     return modules.Myscaled_dot_product_attention(Q, K, V, mask=mask)
 
 
@@ -143,8 +144,36 @@ def run_multihead_self_attention(
         Float[Tensor, " ... sequence_length d_out"]: Tensor with the output of running your optimized, batched multi-headed attention
         implementation with the given QKV projection weights and input features.
     """
-    raise NotImplementedError
 
+    # Approach 1 - with PyTorch Linear layers
+    # model = modules.MyCausalMHA(
+    #     d_model=d_model,
+    #     num_heads=num_heads
+    # )
+
+    # model.q_proj.weight.data.copy_(q_proj_weight)
+    # model.k_proj.weight.data.copy_(k_proj_weight)
+    # model.v_proj.weight.data.copy_(v_proj_weight)
+    # model.o_proj.weight.data.copy_(o_proj_weight)
+
+    # careful with zeroing the bias terms - I lost 4 days of debugging!
+    # model.q_proj.bias.data.zero_() # zero_() preserves the original tensor's shape and dtype
+    # model.k_proj.bias.data.zero_()
+    # model.v_proj.bias.data.zero_()
+    # model.o_proj.bias.data.zero_()
+    
+    # Approach 2 - without PyTorch Linear layers
+    model = modules.MyCausalMHA2(
+        d_model=d_model,
+        num_heads=num_heads
+    )
+
+    model.q_proj.data.copy_(q_proj_weight)
+    model.k_proj.data.copy_(k_proj_weight)
+    model.v_proj.data.copy_(v_proj_weight)
+    model.o_proj.data.copy_(o_proj_weight)
+    
+    return model(in_features)
 
 def run_multihead_self_attention_with_rope(
     d_model: int,
@@ -183,7 +212,29 @@ def run_multihead_self_attention_with_rope(
         Float[Tensor, " ... sequence_length d_out"]: Tensor with the output of running your optimized, batched multi-headed attention
         implementation with the given QKV projection weights and input features.
     """
-    raise NotImplementedError
+    # Approach 1 - with PyTorch Linear layers
+    # model = modules.MyCausalMHA(d_model, num_heads, max_seq_len=max_seq_len, use_rope=True, token_positions=token_positions)
+    # model.q_proj.weight.data.copy_(q_proj_weight)
+    # model.k_proj.weight.data.copy_(k_proj_weight)
+    # model.v_proj.weight.data.copy_(v_proj_weight)
+    # model.o_proj.weight.data.copy_(o_proj_weight)
+
+    # model.q_proj.bias.data.zero_() # zero_() preserves the original tensor's shape and dtype
+    # model.k_proj.bias.data.zero_()
+    # model.v_proj.bias.data.zero_()
+    # model.o_proj.bias.data.zero_()
+
+    # output = model(in_features)
+
+    # Approach 2 - without PyTorch Linear layers
+    model = modules.MyCausalMHA2(d_model, num_heads, max_seq_len=max_seq_len, use_rope=True, token_positions=token_positions)
+    model.q_proj.data.copy_(q_proj_weight)
+    model.k_proj.data.copy_(k_proj_weight)
+    model.v_proj.data.copy_(v_proj_weight)
+    model.o_proj.data.copy_(o_proj_weight)
+    
+    output = model(in_features)
+    return output
 
 
 def run_rope(
@@ -205,8 +256,7 @@ def run_rope(
     Returns:
         Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
     """
-    model = MyRope(theta, d_k, max_seq_len)
-    model.load_state_dict()
+    model = modules.MyRoPE(theta, d_k, max_seq_len)
     return model(in_query_or_key, token_positions)
 
 
