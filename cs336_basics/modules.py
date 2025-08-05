@@ -1,5 +1,5 @@
 import torch
-from math import sqrt
+from math import sqrt, ceil
 from einops import einsum, rearrange
 
 class MyLinear(torch.nn.Module):
@@ -71,6 +71,34 @@ class MySilu(torch.nn.Module):
         sigm = torch.sigmoid(x)
         output = x * sigm
         return output
+
+# https://arxiv.org/pdf/2002.05202
+class MySwiGlu(torch.nn.Module):
+    def __init__(self, d_model, d_ff, device=None, dtype=None):
+        super().__init__()
+        self.d_model = d_model
+        self.d_ff = int(ceil(8*d_model // 3 / 64) * 64)
+        self.device = device
+        self.dtype = dtype
+
+        self.silu = MySilu()
+        self.w1 = torch.randn((self.d_ff, self.d_model))
+        self.w2 = torch.randn((self.d_model, self.d_ff))
+        self.w3 = torch.randn((self.d_ff, self.d_model))
+        
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # PyTorch way
+        # o1 = self.silu(x @ self.w1.T)
+        # o3 = x @ self.w3.T
+        # gated = o1 * o3
+        # o = gated @ self.w2.T
+
+        # einsum way
+        o1 = einsum(x, self.w1, "... d_model, d_ff d_model -> ... d_ff")
+        o3 = einsum(x, self.w3, "... d_model, d_ff d_model -> ... d_ff")
+        gated = self.silu(o1) * o3
+        o = einsum(gated, self.w2, "... d_ff, d_model d_ff -> ... d_model")
+        return o
     
 def MySoftmax(x: torch.Tensor, dim: int):
     eps = 1e-8

@@ -88,7 +88,12 @@ def run_swiglu(
     # swiglu.w1.weight.data = w1_weight
     # swiglu.w2.weight.data = w2_weight
     # swiglu.w3.weight.data = w3_weight
-    raise NotImplementedError
+    # print(w1_weight.shape, w2_weight.shape, w3_weight.shape)
+    swiglu = modules.MySwiGlu(d_model=d_model, d_ff=d_ff)
+    swiglu.w1.data = w1_weight
+    swiglu.w2.data = w2_weight
+    swiglu.w3.data = w3_weight
+    return swiglu(in_features)
 
 
 def run_scaled_dot_product_attention(
@@ -232,7 +237,7 @@ def run_multihead_self_attention_with_rope(
     model.k_proj.data.copy_(k_proj_weight)
     model.v_proj.data.copy_(v_proj_weight)
     model.o_proj.data.copy_(o_proj_weight)
-    
+
     output = model(in_features)
     return output
 
