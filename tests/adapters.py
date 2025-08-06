@@ -427,7 +427,21 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
+    model = modules.MyTransformerLM(vocab_size=vocab_size, context_length=context_length, d_model=d_model, num_layers=num_layers, num_heads=num_heads, d_ff=d_ff, rope_theta=rope_theta)
+    model.tokembedding.W.data = weights["token_embeddings.weight"]
+    for i in range(num_layers):
+        model.attns[i].attn.q_proj.data.copy_(weights[f"layers.{i}.attn.q_proj.weight"])
+        model.attns[i].attn.k_proj.data.copy_(weights[f"layers.{i}.attn.k_proj.weight"])
+        model.attns[i].attn.v_proj.data.copy_(weights[f"layers.{i}.attn.v_proj.weight"])
+        model.attns[i].attn.o_proj.data.copy_(weights[f"layers.{i}.attn.output_proj.weight"])
+        model.attns[i].attnorm.W.data.copy_(weights[f"layers.{i}.ln1.weight"])
+        model.attns[i].ffnnorm.W.data.copy_(weights[f"layers.{i}.ln2.weight"])
+        model.attns[i].ffn.w1.data = weights[f"layers.{i}.ffn.w1.weight"]
+        model.attns[i].ffn.w2.data = weights[f"layers.{i}.ffn.w2.weight"]
+        model.attns[i].ffn.w3.data = weights[f"layers.{i}.ffn.w3.weight"]
+    model.norm.W.data.copy_(weights["ln_final.weight"])
+    model.linear.W.data.copy_(weights["lm_head.weight"].T) # Transposing here as the linear layer ideally has to store (out_features, in_features)
+    return model(in_indices)
 
 
 def run_rmsnorm(
