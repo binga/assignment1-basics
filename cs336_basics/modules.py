@@ -301,14 +301,14 @@ class MyTransformerLM(torch.nn.Module):
         self.rope_theta = rope_theta
         self.device = device
         self.tokembedding = MyEmbedding(num_embeddings=vocab_size, embedding_dim=d_model, device=device)
-        self.attns = [MyTransformerBlock(d_model=d_model, num_heads=num_heads, d_ff=d_ff, max_seq_len=context_length, theta=rope_theta) for _ in range(self.num_layers)]
+        self.layers = [MyTransformerBlock(d_model=d_model, num_heads=num_heads, d_ff=d_ff, max_seq_len=context_length, theta=rope_theta) for _ in range(self.num_layers)]
         self.norm = MyRMSNorm(d_model=d_model, eps=1e-5, device=device)
         self.linear = MyLinear(d_model, vocab_size, device=device)
 
     def forward(self, x):
         x = self.tokembedding(x)
-        for head in self.attns:
-            x = head(x)
+        for layer in self.layers:
+            x = layer(x) # CAREFUL: these are layers and not heads
         x = self.norm(x)
         x = self.linear(x)
         # x = MySoftmax(x, -1) # commenting as the unit test expects us to return unnormalized logits
