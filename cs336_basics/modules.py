@@ -313,3 +313,29 @@ class MyTransformerLM(torch.nn.Module):
         x = self.linear(x)
         # x = MySoftmax(x, -1) # commenting as the unit test expects us to return unnormalized logits
         return x
+
+def MyLogSoftmax(x, dim):
+    # log_softmax is equal to log(softmax values)
+    # log(softmax values) = log(num / denom) = log(num) - log(denom)
+    # log(num) = log(torch.exp(x)) = x # cancel log and exp
+    # log(denom) = log(torch.exp(x).sum(dim, keepdim=True))
+    # log_softmax = x - log(torch.exp(x).sum(dim, keepdim=True))
+
+    eps = 1e-8
+    max = torch.max(x, dim, keepdim=True)[0]
+    x_shifted = x - max
+
+    output = x_shifted - torch.log(torch.exp(x_shifted).sum(dim=dim, keepdim=True))
+    return output
+
+import torch.nn.functional as F
+
+def MyCrossEntropy(logits, targs):
+    eps = 1e-8
+    # probs = MySoftmax(logits, -1) # torch.exp might create issues here. Instead, consider log_softmax.
+    # probs = torch.log_softmax(logits, -1)
+    probs = MyLogSoftmax(logits, -1)
+    num_classes = logits.shape[-1]
+    targs_onehot = F.one_hot(targs, num_classes=num_classes) # CAREFUL: Assign num_classes. Otherwise, absence of a class in target might not yield enough classes.
+    loss = - (targs_onehot * (probs)).sum(-1)
+    return loss.mean()
