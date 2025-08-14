@@ -628,7 +628,7 @@ def run_load_checkpoint(
     Returns:
         int: the previously-serialized number of iterations.
     """
-    raise NotImplementedError
+    return utils.load_checkpoint(src, model, optimizer)
 
 
 def get_tokenizer(
