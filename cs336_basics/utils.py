@@ -111,3 +111,20 @@ def load_checkpoint(src, model, optimizer):
     model = model.load_state_dict(ckpt['model'])
     optimizer.load_state_dict(ckpt['optimizer'])
     return ckpt['iteration']
+
+import numpy as np
+def data_loading(x: np.array, bs: int, ctx_len: int, device: str = "cpu"):
+    total_length = len(x)
+
+    max_start_idx = total_length - ctx_len
+    start_indices = torch.randint(0, max_start_idx, (bs,))
+
+    train_batch = []
+    targets_batch = []
+
+    for start in start_indices:
+        train_batch.append(x[start: start+ctx_len])
+        targets_batch.append(x[start+1: start+1+ctx_len])
+    train_batch = torch.tensor(train_batch, device=device, dtype=torch.long)
+    targets_batch = torch.tensor(targets_batch, device=device, dtype=torch.long)
+    return train_batch, targets_batch
