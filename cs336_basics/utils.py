@@ -79,16 +79,25 @@ def lr_scheduler(t, alpha_max, alpha_min, tw, tc):
     return lr
 
 
-def gradient_clipping(g, M, eps=1e-6):
-    # g - gradient parameters
+def gradient_clipping(grads, M, eps=1e-6):
+    # grads - gradient parameters for all tensors
     # M - max norm
-    norm = torch.norm(g)
-    if norm < M:
-        return g
-    else:
-        g.mul_(M / (norm + eps))
-        return g
+    total_norm = 0.0
+    for param in grads:
+        if param.grad is not None:
+            param_norm = param.grad.data.norm()
+            total_norm += param_norm.item() ** 2
     
+    total_norm = total_norm ** 0.5
+
+    # Apply clipping
+    if total_norm > M:
+        clip_coef = M / (total_norm + eps)
+        for param in grads:
+            if param.grad is not None:
+                param.grad.data.mul_(clip_coef)
+
+
 def save_checkpoint(model, optimizer, iteration, out):
     obj = {
         'model': model.state_dict(),
